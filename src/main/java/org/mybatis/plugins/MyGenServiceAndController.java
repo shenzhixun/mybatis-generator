@@ -1,62 +1,15 @@
 package org.mybatis.plugins;
 
 import org.mybatis.generator.api.GeneratedJavaFile;
-import org.mybatis.generator.api.IntrospectedColumn;
 import org.mybatis.generator.api.IntrospectedTable;
-import org.mybatis.generator.api.PluginAdapter;
-import org.mybatis.generator.api.dom.java.Method;
-import org.mybatis.generator.api.dom.java.TopLevelClass;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MyAdaptPlugin extends PluginAdapter {
-
-    /** 文件覆盖 */
-    public static final boolean FILE_OVER_WRITE = true;
-
-    @Override
-    public boolean validate(List<String> list) {
-        return true;
-    }
-
-    @Override
-    public boolean modelSetterMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedColumn introspectedColumn, IntrospectedTable introspectedTable, ModelClassType modelClassType) {
-        //不生成getter
-        return false;
-    }
-    @Override
-    public boolean modelGetterMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedColumn introspectedColumn, IntrospectedTable introspectedTable, ModelClassType modelClassType) {
-        //不生成setter
-        return false;
-    }
-    @Override
-    public boolean modelBaseRecordClassGenerated(TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
-        //添加domain的import
-        topLevelClass.addImportedType("lombok.Data");
-        topLevelClass.addImportedType("lombok.Builder");
-        topLevelClass.addImportedType("lombok.NoArgsConstructor");
-        topLevelClass.addImportedType("lombok.AllArgsConstructor");
-
-        //添加domain的注解
-        topLevelClass.addAnnotation("@Data");
-        topLevelClass.addAnnotation("@Builder");
-        topLevelClass.addAnnotation("@NoArgsConstructor");
-        topLevelClass.addAnnotation("@AllArgsConstructor");
-
-        //添加domain的注释
-        topLevelClass.addJavaDocLine("/**");
-        topLevelClass.addJavaDocLine("* Created by Mybatis Generator on " + date2Str(new Date()));
-        topLevelClass.addJavaDocLine("*/");
-
-        return true;
-    }
-
+public class MyGenServiceAndController extends MyMapperPlugin {
 
     /**
      * 额外再生成 service 和 controller
@@ -97,7 +50,7 @@ public class MyAdaptPlugin extends PluginAdapter {
             checkAndCreateFile(serviceFile);
 
 
-            
+
 
 
 
@@ -159,46 +112,5 @@ public class MyAdaptPlugin extends PluginAdapter {
 
     }
 
-
-
-    private boolean checkAndCreateFile(String filePath) {
-        // 查看文件是否存在, 不存在则创建
-        if(filePath==null || filePath.trim()=="") {
-            return false;
-        }
-        File file = new File(filePath);
-        try {
-            if (!file.exists()) {
-                file.createNewFile();
-            } else {
-                if(FILE_OVER_WRITE) {
-                    file.delete();
-                    file.createNewFile();
-                }
-                System.err.println(file + " already exists, it was override:" + FILE_OVER_WRITE);
-            }
-        } catch (IOException e) {
-            // e.printStackTrace();
-        }
-        return file.exists();
-    }
-
-    private boolean checkAndMakeDir(String fileDir) {
-        // 查看目录是否存在, 不存在则创建
-        if(fileDir==null || fileDir.trim()=="") {
-            return false;
-        }
-        File file = new File(fileDir);
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-        return file.exists();
-    }
-
-
-    private String date2Str(Date date) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-        return sdf.format(date);
-    }
 
 }

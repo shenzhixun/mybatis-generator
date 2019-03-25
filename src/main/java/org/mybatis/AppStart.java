@@ -1,5 +1,6 @@
-package org.mybatis.plugins;
+package org.mybatis;
 
+import com.ejet.comm.exception.CoBusinessException;
 import org.mybatis.generator.api.MyBatisGenerator;
 import org.mybatis.generator.config.Configuration;
 import org.mybatis.generator.config.xml.ConfigurationParser;
@@ -17,7 +18,7 @@ import java.util.List;
 public class AppStart {
 
 
-    public static void main(String[] args) throws URISyntaxException {
+    public static void main(String[] args) throws URISyntaxException, CoBusinessException, RuntimeException {
         try {
             System.out.println("--------------------start generator-------------------");
             List<String> warnings = new ArrayList<String>();

@@ -1,4 +1,4 @@
-package org.mybatis.plugins;
+package org.mybatis.plugins.utils;
 
 import com.google.common.base.CaseFormat;
 
@@ -24,6 +24,20 @@ public class CodeGeneratorUtils {
     public static String nameConvertUpperCamel(String tableName) {
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, tableName.toLowerCase());
     }
+
+
+    /**
+     * 判断是否为空的语句
+     */
+    public static String isEmpty(Object obj) {
+        StringBuffer buffer = new StringBuffer();
+        if(obj==null) {
+
+        }
+
+        return buffer.toString();
+    }
+
 
 
 

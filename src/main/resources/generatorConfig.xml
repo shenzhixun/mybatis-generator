@@ -26,7 +26,7 @@
         <property name="endingDelimiter" value="`"/>
 
         <!-- 自定义插件 -->
-        <plugin type="org.mybatis.plugins.MyAdaptPlugin" >
+        <plugin type="org.mybatis.plugins.MyGenServiceAndController" >
             <property name="hasLombok" value="true"/>
             <property name="targetPackage" value="${targetPackageBase}.mapper"/>
         </plugin>
