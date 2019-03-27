@@ -8,6 +8,7 @@ import org.mybatis.generator.codegen.mybatis3.MyBatis3FormattingUtilities;
 import org.mybatis.generator.codegen.mybatis3.xmlmapper.elements.AbstractXmlElementGenerator;
 
 import java.sql.JDBCType;
+import java.util.List;
 
 public class MyAbstractXmlElementGenerator extends AbstractXmlElementGenerator {
 
@@ -50,54 +51,71 @@ public class MyAbstractXmlElementGenerator extends AbstractXmlElementGenerator {
         pageList.addElement(baseWhereInclude);
         parentElement.addElement(pageList);
 
+        //insertBatch
+        XmlElement baseColListInclude = new XmlElement("include");
+        baseColListInclude.addAttribute(new Attribute("refid", config.MAPPER_NAME_BASE_COLUMN_LIST));
+
+        XmlElement insertBatch = new XmlElement("insert");
+        insertBatch.addAttribute(new Attribute("id", config.METHOD_INSERT_BATCH));
+        insertBatch.addAttribute(new Attribute("parameterType", "java.util.List"));
+        sb.setLength(0);
+        sb.append("insert into ").append(introspectedTable.getFullyQualifiedTableNameAtRuntime());
+        TextElement insertText = new TextElement(sb.toString());
+
+        insertBatch.addElement(insertText);
+        insertBatch.addElement(baseColListInclude);
+        insertBatch.addElement(foreachElement(introspectedTable.getAllColumns()));
+
+        parentElement.addElement(insertBatch);
+
     }
-
-
-
 
 
     /**
      * 判断是否为空的条件语句
-     * @param column 字段名
      * @return
      */
-    public static XmlElement selectNotNull(String column) {
-        StringBuffer buffer = new StringBuffer();
-        XmlElement selectNotNullElement = new XmlElement("if"); //$NON-NLS-1$
+    public static XmlElement foreachElement(List<IntrospectedColumn> list) {
+        XmlElement foreachElement = new XmlElement("foreach"); //$NON-NLS-1$
+        foreachElement.addAttribute(new Attribute("open", "("));
+        foreachElement.addAttribute(new Attribute("collection", "list"));
+        foreachElement.addAttribute(new Attribute("item", "item"));
+        foreachElement.addAttribute(new Attribute("index", "index"));
+        foreachElement.addAttribute(new Attribute("close", ")"));
+        foreachElement.addAttribute(new Attribute("separator", ","));
 
-
-
-
-        return selectNotNullElement;
+        StringBuilder sb = new StringBuilder();
+        sb.setLength(0);
+        int index = list.size();
+        int count = 1;
+        for(IntrospectedColumn introspectedColumn : list) {
+            sb.append(MyBatis3FormattingUtilities.getParameterClause(introspectedColumn,"item."));
+            if(--index>0) {
+                sb.append(", ");
+                if(count%3==0) { //格式换行
+                    sb.append("\r\n");
+                    if(count>=3) { //缩进
+                        sb.append("\t\t");
+                    }
+                }
+            }
+            count++;
+        }
+        foreachElement.addElement(new TextElement(sb.toString()));
+        return foreachElement;
     }
 
-    /**
-     * 判断是否为空的条件语句
-     * @return
-     */
-    public static XmlElement selectNotEmpty(IntrospectedColumn introspectedColumn) {
-        StringBuffer sb = new StringBuffer();
-        XmlElement selectNotNullElement = new XmlElement("if"); //$NON-NLS-1$
-        sb.setLength(0);
-        sb.append("null != ");
-        sb.append(introspectedColumn.getJavaProperty());
-        selectNotNullElement.addAttribute(new Attribute("test", sb.toString()));
-        sb.setLength(0);
-        // 添加and
-        sb.append(" and ");
-        // 添加别名t
-        sb.append("T.");
-        sb.append(MyBatis3FormattingUtilities.getEscapedColumnName(introspectedColumn));
-        // 添加等号
-        sb.append(" = ");
-        sb.append(MyBatis3FormattingUtilities.getParameterClause(introspectedColumn));
-
-        return selectNotNullElement;
-    }
-
-    private static String notNull(IntrospectedColumn introspectedColumn) {
+    private static String notNull(IntrospectedColumn introspectedColumn, boolean notBlank) {
         StringBuffer sb = new StringBuffer();
         sb.append("null != ").append(introspectedColumn.getJavaProperty());
+        if(notBlank && !isNumber(introspectedColumn)) {
+            sb.append(" and ");
+            sb.append("'' != ").append(introspectedColumn.getJavaProperty());
+        }
+        return sb.toString();
+    }
+
+    private static boolean isNumber(IntrospectedColumn introspectedColumn) {
         if(JDBCType.valueOf(introspectedColumn.getJdbcType())==JDBCType.BIT ||
                 JDBCType.valueOf(introspectedColumn.getJdbcType())==JDBCType.SMALLINT ||
                 JDBCType.valueOf(introspectedColumn.getJdbcType())==JDBCType.TINYINT ||
@@ -110,14 +128,10 @@ public class MyAbstractXmlElementGenerator extends AbstractXmlElementGenerator {
                 JDBCType.valueOf(introspectedColumn.getJdbcType())==JDBCType.ROWID ||
                 JDBCType.valueOf(introspectedColumn.getJdbcType())==JDBCType.REAL
         ) {
-
-        } else {
-            sb.append(" and ");
-            sb.append("'' != ").append(introspectedColumn.getJavaProperty());
+            return true;
         }
-        return sb.toString();
+        return false;
     }
-
 
 
     private XmlElement addBaseColumn() {
@@ -125,16 +139,18 @@ public class MyAbstractXmlElementGenerator extends AbstractXmlElementGenerator {
         XmlElement sql = new XmlElement("sql");
         sql.addAttribute(new Attribute("id", CodeGeneratorConfig.MAPPER_NAME_BASE_COLUMN));
         StringBuilder sb = new StringBuilder();
+        int index = introspectedTable.getAllColumns().size();
         for(IntrospectedColumn introspectedColumn : introspectedTable.getAllColumns()) {
             // 添加别名t
             sb.append("T.");
             sb.append(MyBatis3FormattingUtilities.getEscapedColumnName(introspectedColumn));
-            // 添加等号
-            sb.append(", ");
             //去掉最后一个
+            if(--index>0) {
+                sb.append(", ");
+            }
         }
         //sb.subSequence(0, sb.toString().lastIndexOf(","));
-        sql.addElement(new TextElement(sb.toString().substring(0, sb.toString().lastIndexOf(","))));
+        sql.addElement(new TextElement(sb.toString()));
         return sql;
     }
 
@@ -149,7 +165,7 @@ public class MyAbstractXmlElementGenerator extends AbstractXmlElementGenerator {
         StringBuilder sb = new StringBuilder();
         for(IntrospectedColumn introspectedColumn : introspectedTable.getAllColumns()) {
             XmlElement selectNotNullElement = new XmlElement("if"); //$NON-NLS-1$
-            selectNotNullElement.addAttribute(new Attribute("test", notNull(introspectedColumn)));
+            selectNotNullElement.addAttribute(new Attribute("test", notNull(introspectedColumn, true)));
             sb.setLength(0);
             // 添加and
             sb.append(" and ");
